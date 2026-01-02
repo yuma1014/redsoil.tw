@@ -531,16 +531,39 @@ const Engine = {
 
     actionUseItem: function(itemId, idx) {
         const itemDef = WORLD_DB.items[itemId];
-        if (itemDef && itemDef.type === 'consumable') {
-            if (itemDef.effect) {
-                if (itemDef.effect.hp) this.state.hp = Math.min(this.state.maxHp, this.state.hp + itemDef.effect.hp);
-                if (itemDef.effect.san) this.state.san = Math.min(this.state.maxSan, this.state.san + itemDef.effect.san);
-                if (itemDef.effect.money) this.state.money += itemDef.effect.money;
+        if (itemDef) {
+            // --- 護照與結局判斷邏輯 ---
+            if (itemId.includes('passport')) {
+                if (this.state.location === 'embassy_gate') {
+                    if (itemId === 'passport_kp') {
+                        // 北韓護照無法獲勝
+                        this.addLog("警衛看了一眼你的北韓護照，冷笑著把你趕走了：「我們不收留麻煩。」", 'danger');
+                        this.state.inventory.splice(idx, 1); // 護照被沒收
+                        this.renderFrame();
+                        return;
+                    } else {
+                        // 其他所有護照皆可獲勝
+                        this.handleGameOver("結局達成：重獲自由<br>你出示了護照，警衛打開了大門。你安全了。");
+                        return;
+                    }
+                } else {
+                    this.addLog("這裡不是使用護照的地方。", 'system');
+                    return;
+                }
             }
-            this.addLog(`使用了 ${itemDef.name}。`, 'gain');
-            this.state.inventory.splice(idx, 1);
-        } else {
-            this.addLog(`無法使用 (或是關鍵道具)。`);
+
+            // 一般消耗品邏輯
+            if (itemDef.type === 'consumable') {
+                if (itemDef.effect) {
+                    if (itemDef.effect.hp) this.state.hp = Math.min(this.state.maxHp, this.state.hp + itemDef.effect.hp);
+                    if (itemDef.effect.san) this.state.san = Math.min(this.state.maxSan, this.state.san + itemDef.effect.san);
+                    if (itemDef.effect.money) this.state.money += itemDef.effect.money;
+                }
+                this.addLog(`使用了 ${itemDef.name}。`, 'gain');
+                this.state.inventory.splice(idx, 1);
+            } else {
+                this.addLog(`無法使用 (或是關鍵道具)。`);
+            }
         }
         this.renderFrame();
     },
