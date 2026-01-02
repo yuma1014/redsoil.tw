@@ -1,0 +1,20 @@
+{
+    "name": "Red Soil",
+    "short_name": "RedSoil",
+    "start_url": "index.html",
+    "display": "standalone",
+    "background_color": "#050505",
+    "theme_color": "#0a0a0c",
+    "icons": [
+        {
+            "src": "https://placehold.co/192x192/8a0a0a/ffffff?text=RS",
+            "sizes": "192x192",
+            "type": "image/png"
+        },
+        {
+            "src": "https://placehold.co/512x512/8a0a0a/ffffff?text=RED+SOIL",
+            "sizes": "512x512",
+            "type": "image/png"
+        }
+    ]
+}
