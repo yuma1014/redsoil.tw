@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <link rel="manifest" href="manifest.json">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#0a0a0c">
+    <title>紅土下的餘燼 | 煉獄十層</title>
+    <style>
+        /* =========================================
+           VISUAL CORE (視覺核心)
+           ========================================= */
+        :root {
+            --bg-dark: #050505;
+            --glass-panel: rgba(20, 25, 30, 0.95);
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --text-main: #e0e0e0;
+            --text-dim: #888;
+            --col-hp: #ff3333;
+            --col-san: #00f3ff;
+            --col-cash: #ffd700;
+            --anim-fast: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            --font-ui: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, monospace;
+        }
+
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; user-select: none; }
+
+        body {
+            background: var(--bg-dark);
+            background-image: radial-gradient(circle at center, #1a1a20 0%, #000 100%);
+            color: var(--text-main);
+            font-family: var(--font-ui);
+            margin: 0; height: 100vh; overflow: hidden;
+            display: flex; flex-direction: column;
+        }
+
+        .crt-overlay {
+            position: fixed; inset: 0; pointer-events: none; z-index: 999;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.1) 50%);
+            background-size: 100% 4px;
+        }
+
+        /* --- 側邊欄樣式 --- */
+        #sidebar {
+            position: fixed; top: 0; left: 0; width: 85%; max-width: 320px; height: 100%;
+            background: rgba(10, 12, 15, 0.98);
+            border-right: 1px solid var(--glass-border);
+            backdrop-filter: blur(10px);
+            z-index: 1000;
+            transform: translateX(-100%);
+            transition: transform 0.3s cubic-bezier(0.25, 1, 0.5, 1);
+            padding: 20px; display: flex; flex-direction: column;
+            box-shadow: 10px 0 50px rgba(0,0,0,0.5);
+        }
+        #sidebar.open { transform: translateX(0); }
+        #sidebar h3 { color: var(--col-hp); border-bottom: 1px solid #333; padding-bottom: 10px; margin-top: 40px; }
+        #sidebar p, #sidebar li { font-size: 0.85rem; color: #ccc; line-height: 1.6; margin-bottom: 10px; }
+        #sidebar ul { padding-left: 20px; }
+        
+        .menu-btn {
+            position: fixed; top: 15px; left: 15px; z-index: 1001;
+            background: rgba(0,0,0,0.5); border: 1px solid #444; color: #fff;
+            width: 40px; height: 40px; border-radius: 4px; cursor: pointer;
+            display: flex; align-items: center; justify-content: center; font-size: 1.2rem;
+        }
+        .overlay-bg {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 998;
+            opacity: 0; pointer-events: none; transition: opacity 0.3s;
+        }
+        .overlay-bg.active { opacity: 1; pointer-events: auto; }
+
+        /* --- 頁面層級 --- */
+        .screen { position: absolute; inset: 0; display: flex; flex-direction: column; background: #000; transition: opacity 0.8s; z-index: 10; }
+        .screen.hidden { opacity: 0; pointer-events: none; z-index: 0; }
+        
+        /* --- 1. 落地頁 --- */
+        #screen-landing { align-items: center; justify-content: center; padding: 40px; }
+        .title-glitch { font-size: 3rem; font-weight: 900; letter-spacing: 5px; color: var(--col-hp); text-shadow: 2px 0 var(--col-san); margin-bottom: 10px; text-align: center; }
+        .btn-main { padding: 15px 40px; font-size: 1.2rem; margin-top: 20px; background: var(--col-hp); color: #000; font-weight: bold; border: none; border-radius: 4px; cursor: pointer; width: 100%; max-width: 300px;}
+        .btn-sub { padding: 10px 20px; font-size: 1rem; margin-top: 10px; background: transparent; border: 1px solid #444; color: #888; border-radius: 4px; cursor: pointer; width: 100%; max-width: 300px;}
+        
+        /* --- 1.5 新增：劇情敘事頁 (Intro Story) --- */
+        #screen-intro {
+            align-items: center; justify-content: center; padding: 40px;
+            background: #000; color: #ccc; text-align: center;
+        }
+        .intro-text-container {
+            max-width: 600px;
+            font-family: 'Courier New', monospace;
+            line-height: 2;
+        }
+        .intro-line {
+            opacity: 0; margin-bottom: 20px;
+            transition: opacity 1.5s;
+            color: var(--col-san);
+            text-shadow: 0 0 5px rgba(0, 243, 255, 0.3);
+        }
+        .intro-line.visible { opacity: 1; }
+        
+        /* --- 2. 選角頁 --- */
+        #screen-char-select { padding: 20px; padding-top: 60px; }
+        #char-list-container { width: 100%; max-width: 600px; flex: 1; overflow-y: auto; margin-top: 20px; padding: 10px; border-top: 1px solid #333; }
+        .char-card { background: #111; padding: 15px; margin-bottom: 10px; border-left: 4px solid #444; cursor: pointer; transition: 0.2s; }
+        .char-card:hover { background: #222; border-left-color: var(--col-hp); }
+
+        /* --- 3. 遊戲頁 --- */
+        .top-bar { flex: 0 0 auto; padding: 15px; padding-left: 60px; background: rgba(10, 10, 12, 0.95); border-bottom: 1px solid #333; display: flex; justify-content: space-between; align-items: center; z-index: 20; }
+        #panel-log { flex: 1 1 auto; padding: 20px; overflow-y: auto; scroll-behavior: smooth; background: linear-gradient(to bottom, #000 0%, var(--bg-dark) 20%); }
+        #panel-controls { flex: 0 0 45%; max-height: 400px; background: var(--glass-panel); backdrop-filter: blur(20px); border-top: 1px solid var(--glass-border); display: flex; flex-direction: column; padding: 15px; box-shadow: 0 -10px 40px rgba(0,0,0,0.8); z-index: 30; }
+
+        .btn-base { background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); color: #fff; padding: 12px; margin-bottom: 8px; border-radius: 6px; cursor: pointer; position: relative; overflow: hidden; transition: var(--anim-fast); display: flex; align-items: center; justify-content: space-between; }
+        .btn-move:hover { border-color: #fff; }
+        .btn-action:hover { border-color: var(--col-san); }
+        .btn-save { background: rgba(255, 215, 0, 0.05); border-color: var(--col-cash); margin-top: auto; }
+
+        .log-entry { margin-bottom: 15px; line-height: 1.6; opacity: 0; transform: translateY(10px); animation: fadeUp 0.3s forwards; }
+        .log-entry.system { color: var(--text-dim); font-size: 0.9rem; border-left: 2px solid #333; padding-left: 8px; }
+        .log-entry.danger { color: #ff8888; }
+        .log-entry.gain { color: #ffeebb; }
+        @keyframes fadeUp { to { opacity: 1; transform: translateY(0); } }
+
+        #hud-stats { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px solid rgba(255,255,255,0.05); }
+        .stat-pod { display: flex; flex-direction: column; gap: 4px; }
+        .stat-val { font-size: 0.8rem; font-family: monospace; color: #fff; display: flex; justify-content: space-between; }
+        .bar-track { width: 100%; height: 4px; background: #333; border-radius: 2px; overflow: hidden; }
+        .bar-fill { height: 100%; width: 50%; transition: width 0.5s; }
+
+        #bottom-nav { display: flex; border-top: 1px solid #333; margin-top: 10px; padding-top: 10px; }
+        .nav-btn { flex: 1; text-align: center; padding: 10px; color: #666; font-size: 0.8rem; cursor: pointer; }
+        .nav-btn.active { color: #fff; font-weight: bold; text-shadow: 0 0 10px rgba(255,255,255,0.3); }
+        #inventory-view, #actions-view { display: none; }
+        #inventory-view.active { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+        .inv-slot { aspect-ratio: 1; background: rgba(0,0,0,0.3); border: 1px solid #444; display: flex; align-items: center; justify-content: center; font-size: 0.7rem; color: #aaa; text-align: center; cursor: pointer; word-break: break-all; padding: 2px; }
+        #actions-view.active { display: block; }
+
+    </style>
+</head>
+<body>
+
+    <audio id="bgm" src="bgm.mp3" loop></audio>
+
+    <div class="crt-overlay"></div>
+    <div class="overlay-bg" onclick="Engine.toggleSidebar()"></div>
+
+    <button class="menu-btn" onclick="Engine.toggleSidebar()">☰</button>
+
+    <div id="sidebar">
+        <h2 style="color:#ff3e3e; letter-spacing:2px; margin-bottom: 0;">紅土下的餘燼<br>RED SOIL</h2>
+        <div style="font-size:0.7rem; color:#666;">v2.0 // ULTIMATE</div>
+        <h3>關於遊戲</h3>
+        <div style="overflow-y:auto; flex:1;">
+            <p><strong>世界觀：</strong><br>這是一個關於現代奴役、非法器官交易與絕望求生的故事。你被困在法外之地的園區，護照被扣押，四周是鐵絲網與持槍民兵。</p>
+            <p><strong>核心玩法：</strong></p>
+            <ul>
+                <li><strong>生理生存：</strong>管理你的生命 (HP) 與理智 (SAN)。</li>
+                <li><strong>資源管理：</strong>金錢 ($) 是硬通貨。</li>
+                <li><strong>無指引探索：</strong>閱讀文字線索，尋找出口。</li>
+                <li><strong>結局：</strong>唯有獲得「護照」並抵達大使館才能獲勝。</li>
+            </ul>
+        </div>
+        <div style="margin-top: 20px;">
+            <button class="btn-base btn-save" onclick="Engine.saveGame()">💾 下載進度 (Save TXT)</button>
+        </div>
+    </div>
+
+    <div id="screen-landing" class="screen">
+        <div class="title-glitch">紅土下的餘燼：煉獄十層</div>
+        <div style="color:var(--text-dim); letter-spacing:2px; font-size:0.8rem; margin-bottom: 20px;">ENGINE v2.0 // READY</div>
+        <div id="db-status" style="color:#555; font-size:0.7rem;">NO DATA LOADED</div>
+        
+        <button id="btn-enter" class="btn-main" onclick="Engine.startIntroSequence()">串聯神經網絡 (START)</button>
+        
+        <input type="file" id="upload-save" style="display:none;" onchange="Engine.loadGame(this)">
+        <button id="btn-load" class="btn-sub" onclick="document.getElementById('upload-save').click()">讀取紀錄 (LOAD SAVE)</button>
+    </div>
+
+    <div id="screen-intro" class="screen hidden">
+        <div class="intro-text-container" id="intro-container">
+            </div>
+        <div id="skip-intro" style="position:absolute; bottom:20px; color:#555; font-size:0.8rem; opacity:0; transition:opacity 2s;">
+            正在建立神經連結...
+        </div>
+    </div>
+
+    <div id="screen-char-select" class="screen hidden">
+        <h2 style="color:#fff; border-bottom:1px solid #ff3e3e; padding-bottom:10px; width:100%; text-align:center; margin-top: 0;">串聯對象</h2>
+        <button class="btn-base" onclick="Engine.startRandom()" style="width:100%; justify-content:center; border-color:var(--col-san);">
+            🎲 隨機命運 (RANDOM)
+        </button>
+        <div id="char-list-container"></div>
+    </div>
+
+    <div id="screen-game" class="screen hidden">
+        <div class="top-bar">
+            <span id="loc-name" style="color:#fff; font-weight:bold; letter-spacing:1px;">LOCATION</span>
+            <span id="char-name" style="color:var(--text-dim); font-size:0.8rem;">UNKNOWN</span>
+        </div>
+        <div id="panel-log"></div>
+        <div id="panel-controls">
+            <div id="hud-stats">
+                <div class="stat-pod"><div class="stat-val"><span>HP</span><span id="val-hp">100</span></div><div class="bar-track"><div id="bar-hp" class="bar-fill" style="background:var(--col-hp);"></div></div></div>
+                <div class="stat-pod"><div class="stat-val"><span>SAN</span><span id="val-san">100</span></div><div class="bar-track"><div id="bar-san" class="bar-fill" style="background:var(--col-san);"></div></div></div>
+                <div class="stat-pod"><div class="stat-val"><span>$$$</span><span id="val-cash">0</span></div><div class="bar-track"><div id="bar-cash" class="bar-fill" style="background:var(--col-cash);"></div></div></div>
+            </div>
+            <div id="interaction-area">
+                <div id="actions-view" class="active"></div>
+                <div id="inventory-view"></div>
+            </div>
+            <div id="bottom-nav">
+                <div class="nav-btn active" onclick="Engine.switchTab('actions')">行動 (ACT)</div>
+                <div class="nav-btn" onclick="Engine.switchTab('inventory')">背包 (BAG)</div>
+                <div class="nav-btn" onclick="location.reload()">系統 (SYS)</div>
+            </div>
+        </div>
+    </div>
+
+<script>
+/**
+ * RED SOIL: CORE ENGINE
+ */
+let WORLD_DB = { characters: [], map: {}, items: {} };
+
+const Engine = {
+    state: { hp: 100, maxHp: 100, san: 100, maxSan: 100, money: 0, inventory: [], location: null },
+
+    init: function() {
+        const statusEl = document.getElementById('db-status');
+        const btnEnter = document.getElementById('btn-enter');
+        if (WORLD_DB.characters.length > 0) {
+            statusEl.innerText = `DATABASE LOADED: ${WORLD_DB.characters.length} CHARACTERS`;
+            statusEl.style.color = '#0f0';
+            btnEnter.disabled = false;
+        } else {
+            statusEl.innerText = "ERROR: database.js NOT FOUND";
+            statusEl.style.color = '#f00';
+            btnEnter.disabled = true;
+        }
+    },
+
+    // --- 音樂與開場敘事 ---
+    startIntroSequence: function() {
+        // 1. 播放音樂 (用戶互動觸發)
+        const bgm = document.getElementById('bgm');
+        bgm.volume = 0.5;
+        bgm.play().catch(e => console.log("Audio play failed:", e));
+
+        // 2. 切換到敘事頁面
+        document.getElementById('screen-landing').classList.add('hidden');
+        document.getElementById('screen-intro').classList.remove('hidden');
+
+        // 3. 執行文字動畫
+        const lines = [
+            "身份驗證：中華民國內政部警政署 專案警員",
+            "權限等級：機密 (Classified)",
+            "目標確認：柬埔寨跨國犯罪集團",
+            "--------------------------------",
+            "偵測到操作員具備特殊神經體質...",
+            "正在啟動「遺骸串連系統 (Neural Link)」",
+            "即將連接至已運回台灣之受害者大腦皮層...",
+            "讀取殘存記憶... 重構案發經過...",
+            "警告：同步過程中可能感受到強烈痛楚。",
+            "連線建立。同步率 100%。"
+        ];
+
+        const container = document.getElementById('intro-container');
+        container.innerHTML = '';
+        
+        let delay = 0;
+        lines.forEach((text, index) => {
+            const p = document.createElement('div');
+            p.className = 'intro-line';
+            p.innerText = text;
+            container.appendChild(p);
+
+            // 漸顯時間控制
+            setTimeout(() => {
+                p.classList.add('visible');
+            }, delay);
+            
+            delay += 1500; // 每句間隔 1.5 秒
+        });
+
+        // 4. 動畫結束後自動進入選角
+        setTimeout(() => {
+            this.enterCharSelect();
+        }, delay + 2000);
+    },
+
+    // --- 進入選角 ---
+    enterCharSelect: function() {
+        document.getElementById('screen-intro').classList.add('hidden'); // 隱藏敘事頁
+        document.getElementById('screen-landing').classList.add('hidden');
+        document.getElementById('screen-char-select').classList.remove('hidden');
+        this.renderCharList();
+    },
+
+    // --- 側邊欄控制 ---
+    toggleSidebar: function() {
+        const sidebar = document.getElementById('sidebar');
+        const overlay = document.querySelector('.overlay-bg');
+        if (sidebar.classList.contains('open')) {
+            sidebar.classList.remove('open');
+            overlay.classList.remove('active');
+        } else {
+            sidebar.classList.add('open');
+            overlay.classList.add('active');
+        }
+    },
+
+    // --- 存讀檔 ---
+    saveGame: function() {
+        if (!this.state.location) {
+            alert("目前沒有進行中的遊戲進度。");
+            return;
+        }
+        const saveStr = btoa(JSON.stringify(this.state));
+        const blob = new Blob([saveStr], {type: "text/plain"});
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        const date = new Date().toISOString().slice(0,10);
+        a.download = `RED_SOIL_SAVE_${date}.txt`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    },
+
+    loadGame: function(input) {
+        // 讀檔時也嘗試播放音樂
+        const bgm = document.getElementById('bgm');
+        bgm.volume = 0.5;
+        bgm.play().catch(e => console.log("Audio play failed:", e));
+
+        if (WORLD_DB.characters.length === 0) {
+            alert("請先載入 database.js 資料庫！");
+            return;
+        }
+        const file = input.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            try {
+                const jsonStr = atob(e.target.result);
+                const savedState = JSON.parse(jsonStr);
+                this.state = savedState;
+                document.getElementById('screen-landing').classList.add('hidden');
+                document.getElementById('screen-intro').classList.add('hidden'); // 確保敘事頁隱藏
+                document.getElementById('screen-game').classList.remove('hidden');
+                document.getElementById('char-name').innerText = savedState.charName || "UNKNOWN";
+                document.getElementById('panel-log').innerHTML = ''; 
+                this.addLog(`記憶體讀取成功。恢復連接...`, 'system');
+                this.renderFrame();
+            } catch (err) {
+                alert("存檔損毀！");
+            }
+        };
+        reader.readAsText(file);
+    },
+
+    // --- 遊戲邏輯 ---
+    renderCharList: function() {
+        const list = document.getElementById('char-list-container');
+        list.innerHTML = '';
+        WORLD_DB.characters.forEach(char => {
+            const el = document.createElement('div');
+            el.className = 'char-card';
+            el.innerHTML = `<div style="color:#fff; font-weight:bold;">${char.name}</div><div style="color:#888; font-size:0.8rem;">${char.role}</div>`;
+            el.onclick = () => this.startGame(char);
+            list.appendChild(el);
+        });
+    },
+
+    startRandom: function() {
+        if(WORLD_DB.characters.length === 0) return;
+        const list = WORLD_DB.characters;
+        this.startGame(list[Math.floor(Math.random() * list.length)]);
+    },
+
+    startGame: function(charData) {
+        this.state = {
+            hp: charData.hp || 100, maxHp: charData.hp || 100,
+            san: charData.san || 100, maxSan: charData.san || 100,
+            money: charData.money || 0,
+            inventory: [...(charData.items || [])],
+            location: charData.start,
+            charName: charData.name
+        };
+        document.getElementById('screen-char-select').classList.add('hidden');
+        document.getElementById('screen-game').classList.remove('hidden');
+        document.getElementById('char-name').innerText = charData.name;
+        document.getElementById('panel-log').innerHTML = ''; 
+        this.addLog(`神經網路串聯成功。載入記憶: ${charData.desc || ''}`, 'system');
+        this.renderFrame();
+    },
+
+    renderFrame: function() {
+        this.updateStatsUI();
+        if (this.state.hp <= 0) return this.handleGameOver("宿主生命徵象停止。");
+        if (this.state.san <= 0) return this.handleGameOver("精神崩潰，意識斷線。");
+
+        const locData = WORLD_DB.map[this.state.location];
+        if (!locData) return this.addLog("ERROR: Map Data Missing", 'danger');
+
+        document.getElementById('loc-name').innerText = (locData.name || "UNKNOWN").toUpperCase();
+        
+        const actView = document.getElementById('actions-view');
+        actView.innerHTML = '';
+
+        if (locData.exits) {
+            locData.exits.forEach(exitId => {
+                const target = WORLD_DB.map[exitId];
+                if (target) {
+                    const btn = document.createElement('div');
+                    btn.className = 'btn-base btn-move';
+                    btn.innerHTML = `<span>前往 ${target.name}</span> <span>➜</span>`;
+                    btn.onclick = () => this.actionMove(exitId);
+                    actView.appendChild(btn);
+                }
+            });
+        }
+
+        const btnSearch = document.createElement('div');
+        btnSearch.className = 'btn-base btn-action';
+        btnSearch.innerText = '🔍 搜索環境';
+        btnSearch.onclick = () => this.actionSearch();
+        actView.appendChild(btnSearch);
+
+        this.updateInventoryUI();
+    },
+
+    updateStatsUI: function() {
+        const s = this.state;
+        document.getElementById('val-hp').innerText = s.hp;
+        document.getElementById('val-san').innerText = s.san;
+        document.getElementById('val-cash').innerText = s.money;
+        document.getElementById('bar-hp').style.width = (s.hp / s.maxHp * 100) + "%";
+        document.getElementById('bar-san').style.width = (s.san / s.maxSan * 100) + "%";
+        document.getElementById('bar-cash').style.width = Math.min(100, s.money / 5) + "%";
+    },
+
+    updateInventoryUI: function() {
+        const invView = document.getElementById('inventory-view');
+        invView.innerHTML = '';
+        this.state.inventory.forEach((itemId, idx) => {
+            const itemDef = WORLD_DB.items[itemId];
+            const el = document.createElement('div');
+            el.className = 'inv-slot';
+            el.innerText = itemDef ? itemDef.name : itemId;
+            el.onclick = () => this.actionUseItem(itemId, idx);
+            invView.appendChild(el);
+        });
+        if (this.state.inventory.length === 0) invView.innerHTML = '<div style="color:#555; grid-column:span 4; text-align:center; padding:20px;">EMPTY</div>';
+    },
+
+    actionMove: function(targetId) {
+        this.state.location = targetId;
+        this.state.hp -= 1;
+        const loc = WORLD_DB.map[targetId];
+        this.addLog(`<br>【 抵達：${loc.name} 】`, 'gain');
+        this.addLog(loc.desc || '');
+        this.renderFrame();
+    },
+
+    actionSearch: function() {
+        this.state.hp -= 2;
+        this.addLog("你仔細搜查了周圍...", 'system');
+        const loc = WORLD_DB.map[this.state.location];
+        if (loc.loot && loc.loot.length > 0) {
+            const foundItem = loc.loot.shift(); 
+            const itemDef = WORLD_DB.items[foundItem];
+            this.state.inventory.push(foundItem);
+            this.addLog(`發現物品：${itemDef ? itemDef.name : foundItem}`, 'gain');
+        } else {
+            const msgs = ["除了一些垃圾，什麼也沒有。", "角落有乾涸的血跡。", "這裡很安靜。"];
+            this.addLog(msgs[Math.floor(Math.random()*msgs.length)]);
+        }
+        this.renderFrame();
+    },
+
+    actionUseItem: function(itemId, idx) {
+        const itemDef = WORLD_DB.items[itemId];
+        if (itemDef && itemDef.type === 'consumable') {
+            if (itemDef.effect) {
+                if (itemDef.effect.hp) this.state.hp = Math.min(this.state.maxHp, this.state.hp + itemDef.effect.hp);
+                if (itemDef.effect.san) this.state.san = Math.min(this.state.maxSan, this.state.san + itemDef.effect.san);
+                if (itemDef.effect.money) this.state.money += itemDef.effect.money;
+            }
+            this.addLog(`使用了 ${itemDef.name}。`, 'gain');
+            this.state.inventory.splice(idx, 1);
+        } else {
+            this.addLog(`無法使用 (或是關鍵道具)。`);
+        }
+        this.renderFrame();
+    },
+
+    switchTab: function(tabName) {
+        document.getElementById('actions-view').classList.remove('active');
+        document.getElementById('inventory-view').classList.remove('active');
+        document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+        event.target.classList.add('active');
+        if (tabName === 'actions') document.getElementById('actions-view').classList.add('active');
+        if (tabName === 'inventory') document.getElementById('inventory-view').classList.add('active');
+    },
+
+    addLog: function(msg, type='') {
+        const panel = document.getElementById('panel-log');
+        const div = document.createElement('div');
+        div.className = `log-entry ${type}`;
+        div.innerHTML = msg;
+        panel.appendChild(div);
+        panel.scrollTop = panel.scrollHeight;
+    },
+
+    handleGameOver: function(reason) {
+        document.getElementById('actions-view').innerHTML = `<div style="text-align:center; padding:20px;"><h3 style="color:red">GAME OVER</h3><p>${reason}</p><button class="btn-base" onclick="location.reload()">RESTART</button></div>`;
+    }
+};
+
+function loadWorldData(data) {
+    WORLD_DB = data;
+    Engine.init();
+}
+</script>
+
+<script src="database.js"></script>
+
+</body>
+</html>
