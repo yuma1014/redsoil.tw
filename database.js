@@ -109,8 +109,8 @@ loadWorldData({
         
         // --- 2. 聲色場所受害者 ---
         { id: 'c04', name: 'Yuri', role: '落魄網紅', hp: 50, san: 30, money: 10, start: 'ktv_vip', items: ['pregnancy_test'], desc: "欠下高利貸後來這裡還債。剛在 VIP 包廂服侍完一個軍閥。" },
-        { id: 'c05', name: '美雲', role: '單親媽媽', hp: 40, san: 70, money: 20, start: 'dorm_f', items: ['medkit'], desc: "為了給孩子籌手術費被騙。每天在接客與自殺的念頭中掙扎。" },
-        { id: 'c06', name: '小雅', role: '未成年陪侍', hp: 45, san: 20, money: 0, start: 'private_room', items: ['lubricant'], desc: "謊報年齡來打工，結果掉進地獄。她還太小，承受不了那些變態。" },
+        { id: 'c05', name: '美雲', role: '單親mm', hp: 40, san: 70, money: 20, start: 'dorm_f', items: ['medkit'], desc: "為了給孩子籌手術費被騙。每天在接客與自殺的念頭中掙扎。" },
+        { id: 'c06', name: '小雅', role: '未*年陪侍', hp: 45, san: 20, money: 0, start: 'private_room', items: ['lubricant'], desc: "謊報年齡來打工，結果掉進地獄。她還太小，承受不了那些變態。" },
         { id: 'c07', name: 'Rose', role: '媽媽桑', hp: 70, san: 10, money: 500, start: 'massage_parlor', items: ['pills_sedative', 'cash_stack'], desc: "曾經也是受害者，現在為了生存成為了管理受害者的加害者。" },
         { id: 'c08', name: 'Cindy', role: '美甲師', hp: 55, san: 45, money: 30, start: 'massage_parlor', items: ['lingerie'], desc: "手藝很好，但這裡不需要美甲，只需要肉體。" },
         { id: 'c09', name: 'Coco', role: '直播主', hp: 50, san: 20, money: 5, start: 'private_room', items: ['condom'], desc: "以為是來做帶貨直播，結果是裸聊與色情直播。" },
@@ -130,7 +130,7 @@ loadWorldData({
         // --- 4. 專業人士與特殊背景 ---
         { id: 'c20', name: '李醫師', role: '無國界醫生', hp: 70, san: 80, money: 200, start: 'clinic', items: ['medkit', 'id_card_lvl3'], desc: "被綁架來進行非法器官摘除手術。內心飽受煎熬，但有權限卡。" },
         { id: 'c21', name: 'Sophie', role: '戰地記者', hp: 70, san: 90, money: 300, start: 'general_store', items: ['passport_uk'], desc: "深入險境調查真相。持有英國護照，只要能到大使館就贏了。" },
-        { id: 'c22', name: '王總', role: '落馬高官', hp: 50, san: 40, money: 1000, start: 'ktv_vip', items: ['passport_cn', 'cash_stack'], desc: "攜款潛逃結果被黑吃黑。雖然有錢，但在這裡肥羊死得最快。" },
+        { id: 'c22', name: '王書記', role: '落馬高官', hp: 50, san: 40, money: 1000, start: 'ktv_vip', items: ['passport_cn', 'cash_stack'], desc: "攜款潛逃結果被黑吃黑。雖然有錢，但在這裡肥羊死得最快。" },
         { id: 'c23', name: 'Mark', role: '美國遊客', hp: 80, san: 70, money: 150, start: 'police_station', items: ['passport_us'], desc: "迷路問路結果被警察賣進來。持有最強的美國護照，但不懂中文。" },
         { id: 'c24', name: '阿飛', role: '當地導遊', hp: 80, san: 80, money: 50, start: 'slum_area', items: ['knife'], desc: "看不慣同胞被賣，暗中幫助逃跑者。熟悉地形。" },
         { id: 'c25', name: '小劉', role: '車手', hp: 80, san: 50, money: 200, start: 'street_exit', items: ['car_keys'], desc: "負責幫園區運送物資。手上有車鑰匙，有機會直接開車衝出去。" },
@@ -138,6 +138,6 @@ loadWorldData({
         { id: 'c27', name: '田中', role: '日本背包客', hp: 70, san: 60, money: 300, start: 'casino_floor', items: ['passport_jp', 'chips'], desc: "在賭場被下藥。持有日本護照。" },
         { id: 'c28', name: '阿邦', role: '毒販', hp: 70, san: 30, money: 400, start: 'dungeon', items: ['pills_sedative'], desc: "黑吃黑失敗被關進來。對毒品很了解。" },
         { id: 'c29', name: 'No.4092', role: '無名血奴', hp: 20, san: 10, money: 0, start: 'blood_room', items: [], desc: "已經被抽乾了，連名字都忘了。生存難度：極高。" },
-        { id: 'c30', name: '周董', role: '破產老闆', hp: 40, san: 30, money: 0, start: 'canteen', items: [], desc: "曾經身價上億，現在搶發霉麵包吃。無法接受現實。" }
+        { id: 'c30', name: '牛雲', role: '破產老闆', hp: 40, san: 30, money: 0, start: 'canteen', items: [], desc: "曾經身價上億，現在搶發霉麵包吃。無法接受現實。" }
     ]
 });
