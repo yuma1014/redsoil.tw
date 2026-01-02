@@ -14,127 +14,96 @@
            ========================================= */
         :root {
             --bg-dark: #050505;
-            --glass-panel: rgba(20, 25, 30, 0.95); /* 加深背景防透視 */
+            --glass-panel: rgba(20, 25, 30, 0.95);
             --glass-border: rgba(255, 255, 255, 0.1);
             --text-main: #e0e0e0;
             --text-dim: #888;
-            
             --col-hp: #ff3333;
             --col-san: #00f3ff;
             --col-cash: #ffd700;
-            
             --anim-fast: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            --sidebar-width: 85%; /* 手機版寬度 */
             --font-ui: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, monospace;
+        }
+
+        @media (min-width: 768px) {
+            :root { --sidebar-width: 320px; }
         }
 
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; user-select: none; }
 
         body {
-            background: var(--bg-dark);
-            background-image: radial-gradient(circle at center, #1a1a20 0%, #000 100%);
+            background: #000; /* 底色改全黑，配合推移 */
             color: var(--text-main);
             font-family: var(--font-ui);
             margin: 0; height: 100vh; overflow: hidden;
-            display: flex; flex-direction: column;
         }
 
         .crt-overlay {
-            position: fixed; inset: 0; pointer-events: none; z-index: 999;
+            position: fixed; inset: 0; pointer-events: none; z-index: 9999;
             background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.1) 50%);
             background-size: 100% 4px;
         }
 
-        /* --- UI 修復：Flexbox 垂直堆疊 --- */
-        /* 確保每個區塊都佔據實體空間，避免重疊 */
-        
-        .screen {
-            position: absolute; inset: 0; 
-            display: flex; flex-direction: column; /* 垂直排列 */
-            background: #000;
-            transition: opacity 0.5s;
-            z-index: 10;
+        /* --- 推移容器 (Push Container) --- */
+        /* 包裹所有遊戲畫面的容器，用於整體移動 */
+        #app-pusher {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            background: var(--bg-dark);
+            background-image: radial-gradient(circle at center, #1a1a20 0%, #000 100%);
+            transition: transform 0.3s cubic-bezier(0.25, 1, 0.5, 1);
+            z-index: 2; /* 在側邊欄之上 */
+            box-shadow: -10px 0 20px rgba(0,0,0,0.5); /* 推移時的陰影 */
         }
+
+        /* 當側邊欄打開時，推移容器向右移動 */
+        #app-pusher.pushed {
+            transform: translateX(var(--sidebar-width));
+        }
+
+        /* --- 側邊欄樣式 (Sidebar) --- */
+        #sidebar {
+            position: fixed; top: 0; left: 0; 
+            width: var(--sidebar-width); height: 100%;
+            background: rgba(10, 12, 15, 1);
+            border-right: 1px solid var(--glass-border);
+            z-index: 1; /* 位於推移容器之下，被蓋住 */
+            padding: 20px; display: flex; flex-direction: column;
+            visibility: hidden; /* 預設隱藏以優化效能 */
+            transition: visibility 0.3s;
+        }
+        
+        /* 配合 JS，當打開時讓側邊欄可見 */
+        body.menu-open #sidebar { visibility: visible; }
+
+        #sidebar h3 { color: var(--col-hp); border-bottom: 1px solid #333; padding-bottom: 10px; margin-top: 40px; }
+        #sidebar p, #sidebar li { font-size: 0.85rem; color: #ccc; line-height: 1.6; margin-bottom: 10px; }
+        #sidebar ul { padding-left: 20px; }
+
+        /* 遮罩層 (點擊關閉選單) */
+        .overlay-bg {
+            position: absolute; inset: 0; background: rgba(0,0,0,0.5); z-index: 998;
+            opacity: 0; pointer-events: none; transition: opacity 0.3s;
+        }
+        #app-pusher.pushed .overlay-bg { opacity: 1; pointer-events: auto; }
+
+        /* --- 選單按鈕 (跟隨推移) --- */
+        .menu-btn {
+            position: absolute; top: 15px; left: 15px; z-index: 1001;
+            background: rgba(0,0,0,0.5); border: 1px solid #444; color: #fff;
+            width: 40px; height: 40px; border-radius: 4px; cursor: pointer;
+            display: flex; align-items: center; justify-content: center; font-size: 1.2rem;
+        }
+
+        /* --- 頁面層級 --- */
+        .screen { position: absolute; inset: 0; display: flex; flex-direction: column; transition: opacity 0.8s; z-index: 10; }
         .screen.hidden { opacity: 0; pointer-events: none; z-index: 0; }
-
-        /* 頂部資訊列 (不再是 absolute) */
-        .top-bar {
-            flex: 0 0 auto; /* 固定高度 */
-            padding: 15px;
-            background: rgba(10, 10, 12, 0.95);
-            border-bottom: 1px solid #333;
-            display: flex; justify-content: space-between; align-items: center;
-            z-index: 20;
-        }
-
-        /* 中間日誌區 (自動填滿剩餘空間) */
-        #panel-log {
-            flex: 1 1 auto; /* 彈性伸縮 */
-            padding: 20px;
-            overflow-y: auto; /* 內部捲動 */
-            scroll-behavior: smooth;
-            background: linear-gradient(to bottom, #000 0%, var(--bg-dark) 20%);
-        }
-
-        /* 底部控制區 (固定高度) */
-        #panel-controls {
-            flex: 0 0 45%; /* 固定佔比 */
-            max-height: 400px;
-            background: var(--glass-panel);
-            backdrop-filter: blur(20px);
-            border-top: 1px solid var(--glass-border);
-            display: flex; flex-direction: column;
-            padding: 15px;
-            box-shadow: 0 -10px 40px rgba(0,0,0,0.8);
-            z-index: 30;
-        }
-
-        /* --- 其他樣式 --- */
-        .btn-base {
-            background: rgba(255,255,255,0.05);
-            border: 1px solid var(--glass-border);
-            color: #fff; padding: 12px; margin-bottom: 8px;
-            border-radius: 6px; cursor: pointer;
-            position: relative; overflow: hidden;
-            transition: var(--anim-fast);
-            display: flex; align-items: center; justify-content: space-between;
-        }
-        .btn-base:active { transform: scale(0.98); background: rgba(255,255,255,0.1); }
-        .btn-base::after { content:''; position: absolute; top:0; left:0; width:3px; height:100%; background: transparent; transition: var(--anim-fast); }
         
-        .btn-move:hover { border-color: #fff; }
-        .btn-move:hover::after { background: #fff; }
-        .btn-action { background: rgba(0, 243, 255, 0.05); }
-        .btn-action:hover { border-color: var(--col-san); }
-        .btn-action:hover::after { background: var(--col-san); }
-
-        .log-entry { margin-bottom: 15px; line-height: 1.6; opacity: 0; transform: translateY(10px); animation: fadeUp 0.3s forwards; }
-        .log-entry.system { color: var(--text-dim); font-size: 0.9rem; border-left: 2px solid #333; padding-left: 8px; }
-        .log-entry.danger { color: #ff8888; }
-        .log-entry.gain { color: #ffeebb; }
-        @keyframes fadeUp { to { opacity: 1; transform: translateY(0); } }
-
-        #hud-stats { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px solid rgba(255,255,255,0.05); }
-        .stat-pod { display: flex; flex-direction: column; gap: 4px; }
-        .stat-val { font-size: 0.8rem; font-family: monospace; color: #fff; display: flex; justify-content: space-between; }
-        .bar-track { width: 100%; height: 4px; background: #333; border-radius: 2px; overflow: hidden; }
-        .bar-fill { height: 100%; width: 50%; transition: width 0.5s; }
-
-        #interaction-area { flex: 1; overflow-y: auto; position: relative; }
-        
-        #bottom-nav { display: flex; border-top: 1px solid #333; margin-top: 10px; padding-top: 10px; }
-        .nav-btn { flex: 1; text-align: center; padding: 10px; color: #666; font-size: 0.8rem; cursor: pointer; }
-        .nav-btn.active { color: #fff; font-weight: bold; text-shadow: 0 0 10px rgba(255,255,255,0.3); }
-
-        #inventory-view { display: none; grid-template-columns: repeat(4, 1fr); gap: 8px; }
-        #inventory-view.active { display: grid; }
-        .inv-slot { aspect-ratio: 1; background: rgba(0,0,0,0.3); border: 1px solid #444; display: flex; align-items: center; justify-content: center; font-size: 0.7rem; color: #aaa; text-align: center; cursor: pointer; word-break: break-all; padding: 2px; }
-        .inv-slot:hover { border-color: var(--col-cash); color: #fff; }
-        #actions-view { display: none; }
-        #actions-view.active { display: block; }
-
-        /* 標題與選角 */
+        /* --- 1. 落地頁 --- */
         #screen-landing { align-items: center; justify-content: center; padding: 40px; }
-        .title-glitch { font-size: 2rem; font-weight: 900; letter-spacing: 5px; color: var(--col-hp); text-shadow: 2px 0 var(--col-san); margin-bottom: 10px; text-align: center; }
+        .title-glitch { font-size: 3rem; font-weight: 900; letter-spacing: 5px; color: var(--col-hp); text-shadow: 2px 0 var(--col-san); margin-bottom: 10px; text-align: center; }
         .btn-main { padding: 15px 40px; font-size: 1.2rem; margin-top: 20px; background: var(--col-hp); color: #000; font-weight: bold; border: none; border-radius: 4px; cursor: pointer; width: 100%; max-width: 300px;}
         .btn-sub { padding: 10px 20px; font-size: 1rem; margin-top: 10px; background: transparent; border: 1px solid #444; color: #888; border-radius: 4px; cursor: pointer; width: 100%; max-width: 300px;}
         
@@ -155,40 +124,69 @@
             text-shadow: 0 0 5px rgba(0, 243, 255, 0.3);
         }
         .intro-line.visible { opacity: 1; }
-
-        /* --- 側邊欄樣式 (含 Logo) --- */
-        #sidebar {
-            position: fixed; top: 0; left: 0; width: 85%; max-width: 320px; height: 100%;
-            background: rgba(10, 12, 15, 0.98);
-            border-right: 1px solid var(--glass-border);
-            backdrop-filter: blur(10px);
-            z-index: 1000;
-            transform: translateX(-100%);
-            transition: transform 0.3s cubic-bezier(0.25, 1, 0.5, 1);
-            padding: 20px; display: flex; flex-direction: column;
-            box-shadow: 10px 0 50px rgba(0,0,0,0.5);
-        }
-        #sidebar.open { transform: translateX(0); }
-        #sidebar h3 { color: var(--col-hp); border-bottom: 1px solid #333; padding-bottom: 10px; margin-top: 40px; }
-        #sidebar p, #sidebar li { font-size: 0.85rem; color: #ccc; line-height: 1.6; margin-bottom: 10px; }
-        #sidebar ul { padding-left: 20px; }
         
-        .menu-btn {
-            position: fixed; top: 15px; left: 15px; z-index: 1001;
-            background: rgba(0,0,0,0.5); border: 1px solid #444; color: #fff;
-            width: 40px; height: 40px; border-radius: 4px; cursor: pointer;
-            display: flex; align-items: center; justify-content: center; font-size: 1.2rem;
-        }
-        .overlay-bg {
-            position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 998;
-            opacity: 0; pointer-events: none; transition: opacity 0.3s;
-        }
-        .overlay-bg.active { opacity: 1; pointer-events: auto; }
-        
-        #screen-char-select { padding: 20px; padding-top: 60px; }
+        /* --- 2. 選角頁 --- */
+        #screen-char-select { padding: 20px; padding-top: 70px; /* 增加頂部間距避開按鈕 */ }
         #char-list-container { width: 100%; max-width: 600px; flex: 1; overflow-y: auto; margin-top: 20px; padding: 10px; border-top: 1px solid #333; }
         .char-card { background: #111; padding: 15px; margin-bottom: 10px; border-left: 4px solid #444; cursor: pointer; transition: 0.2s; }
         .char-card:hover { background: #222; border-left-color: var(--col-hp); }
+
+        /* --- 3. 遊戲頁 (修正重疊問題) --- */
+        .top-bar { 
+            flex: 0 0 auto; 
+            padding: 15px; 
+            padding-left: 70px; /* 關鍵修正：增加左側內距，避開選單按鈕 */
+            background: rgba(10, 10, 12, 0.95); 
+            border-bottom: 1px solid #333; 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            z-index: 20; 
+        }
+
+        /* 關鍵修正：文字截斷與響應式 */
+        #loc-name {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 50vw; /* 限制最大寬度為螢幕一半 */
+        }
+
+        #panel-log { flex: 1 1 auto; padding: 20px; overflow-y: auto; scroll-behavior: smooth; background: linear-gradient(to bottom, #000 0%, var(--bg-dark) 20%); }
+        #panel-controls { flex: 0 0 45%; max-height: 400px; background: var(--glass-panel); backdrop-filter: blur(20px); border-top: 1px solid var(--glass-border); display: flex; flex-direction: column; padding: 15px; box-shadow: 0 -10px 40px rgba(0,0,0,0.8); z-index: 30; }
+
+        .btn-base { background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); color: #fff; padding: 12px; margin-bottom: 8px; border-radius: 6px; cursor: pointer; position: relative; overflow: hidden; transition: var(--anim-fast); display: flex; align-items: center; justify-content: space-between; }
+        .btn-move:hover { border-color: #fff; }
+        .btn-action:hover { border-color: var(--col-san); }
+        .btn-save { background: rgba(255, 215, 0, 0.05); border-color: var(--col-cash); margin-top: auto; }
+
+        .log-entry { margin-bottom: 15px; line-height: 1.6; opacity: 0; transform: translateY(10px); animation: fadeUp 0.3s forwards; }
+        .log-entry.system { color: var(--text-dim); font-size: 0.9rem; border-left: 2px solid #333; padding-left: 8px; }
+        .log-entry.danger { color: #ff8888; }
+        .log-entry.gain { color: #ffeebb; }
+        @keyframes fadeUp { to { opacity: 1; transform: translateY(0); } }
+
+        #hud-stats { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px solid rgba(255,255,255,0.05); }
+        .stat-pod { display: flex; flex-direction: column; gap: 4px; }
+        .stat-val { font-size: 0.8rem; font-family: monospace; color: #fff; display: flex; justify-content: space-between; }
+        .bar-track { width: 100%; height: 4px; background: #333; border-radius: 2px; overflow: hidden; }
+        .bar-fill { height: 100%; width: 50%; transition: width 0.5s; }
+
+        #bottom-nav { display: flex; border-top: 1px solid #333; margin-top: 10px; padding-top: 10px; }
+        .nav-btn { flex: 1; text-align: center; padding: 10px; color: #666; font-size: 0.8rem; cursor: pointer; }
+        .nav-btn.active { color: #fff; font-weight: bold; text-shadow: 0 0 10px rgba(255,255,255,0.3); }
+        #inventory-view, #actions-view { display: none; }
+        #inventory-view.active { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+        .inv-slot { aspect-ratio: 1; background: rgba(0,0,0,0.3); border: 1px solid #444; display: flex; align-items: center; justify-content: center; font-size: 0.7rem; color: #aaa; text-align: center; cursor: pointer; word-break: break-all; padding: 2px; }
+        #actions-view.active { display: block; }
+
+        /* 手機版字體微調 */
+        @media (max-width: 768px) {
+            .title-glitch { font-size: 2rem; }
+            #loc-name { font-size: 1rem; }
+            #char-name { font-size: 0.7rem; }
+        }
+
     </style>
 </head>
 <body>
@@ -196,9 +194,6 @@
     <audio id="bgm" src="bgm.mp3" loop></audio>
 
     <div class="crt-overlay"></div>
-    <div class="overlay-bg" onclick="Engine.toggleSidebar()"></div>
-
-    <button class="menu-btn" onclick="Engine.toggleSidebar()">☰</button>
 
     <div id="sidebar">
         <img src="logo.png" alt="Game Logo" style="width: 100px; height: auto; margin-bottom: 15px; border-radius: 8px; border: 1px solid #333;">
@@ -221,58 +216,63 @@
         </div>
     </div>
 
-    <div id="screen-landing" class="screen">
-        <div class="title-glitch">紅土下的餘燼 ： 煉獄十層</div>
-        <div style="color:var(--text-dim); letter-spacing:2px; font-size:0.8rem; margin-bottom: 20px;">ENGINE v2.0 // READY</div>
-        <div id="db-status" style="color:#555; font-size:0.7rem;">NO DATA LOADED</div>
+    <div id="app-pusher">
         
-        <button id="btn-enter" class="btn-main" onclick="Engine.startIntroSequence()">串聯神經網絡 (START)</button>
-        
-        <input type="file" id="upload-save" style="display:none;" onchange="Engine.loadGame(this)">
-        <button id="btn-load" class="btn-sub" onclick="document.getElementById('upload-save').click()">讀取紀錄 (LOAD SAVE)</button>
-    </div>
+        <div class="overlay-bg" onclick="Engine.toggleSidebar()"></div>
 
-    <div id="screen-intro" class="screen hidden">
-        <div class="intro-text-container" id="intro-container">
-            </div>
-        <div id="skip-intro" style="position:absolute; bottom:20px; color:#555; font-size:0.8rem; opacity:0; transition:opacity 2s;">
-            正在建立神經連結...
+        <button class="menu-btn" onclick="Engine.toggleSidebar()">☰</button>
+
+        <div id="screen-landing" class="screen">
+            <div class="title-glitch">紅土下的餘燼：煉獄十層</div>
+            <div style="color:var(--text-dim); letter-spacing:2px; font-size:0.8rem; margin-bottom: 20px;">ENGINE v2.0 // READY</div>
+            <div id="db-status" style="color:#555; font-size:0.7rem;">NO DATA LOADED</div>
+            
+            <button id="btn-enter" class="btn-main" onclick="Engine.startIntroSequence()">串聯神經網絡 (START)</button>
+            
+            <input type="file" id="upload-save" style="display:none;" onchange="Engine.loadGame(this)">
+            <button id="btn-load" class="btn-sub" onclick="document.getElementById('upload-save').click()">讀取紀錄 (LOAD SAVE)</button>
         </div>
-    </div>
 
-    <div id="screen-char-select" class="screen hidden">
-        <h2 style="color:#fff; border-bottom:1px solid #333; padding-bottom:10px; width:100%; text-align:center; margin-top: 0;">SELECT SUBJECT</h2>
-        <button class="btn-base" onclick="Engine.startRandom()" style="width:100%; justify-content:center; border-color:var(--col-san);">
-            🎲 隨機命運 (RANDOM)
-        </button>
-        <div id="char-list-container"></div>
-    </div>
-
-    <div id="screen-game" class="screen hidden">
-        <div class="top-bar">
-            <span id="loc-name" style="color:#fff; font-weight:bold; letter-spacing:1px;">LOCATION</span>
-            <span id="char-name" style="color:var(--text-dim); font-size:0.8rem;">UNKNOWN</span>
-        </div>
-        <div id="panel-log"></div>
-        <div id="panel-controls">
-            <div id="hud-stats">
-                <div class="stat-pod"><div class="stat-val"><span>HP</span><span id="val-hp">100</span></div><div class="bar-track"><div id="bar-hp" class="bar-fill" style="background:var(--col-hp);"></div></div></div>
-                <div class="stat-pod"><div class="stat-val"><span>SAN</span><span id="val-san">100</span></div><div class="bar-track"><div id="bar-san" class="bar-fill" style="background:var(--col-san);"></div></div></div>
-                <div class="stat-pod"><div class="stat-val"><span>$$$</span><span id="val-cash">0</span></div><div class="bar-track"><div id="bar-cash" class="bar-fill" style="background:var(--col-cash);"></div></div></div>
-            </div>
-            <div id="interaction-area">
-                <div id="actions-view" class="active"></div>
-                <div id="inventory-view"></div>
-            </div>
-            <div id="bottom-nav">
-                <div class="nav-btn active" onclick="Engine.switchTab('actions')">行動 (ACT)</div>
-                <div class="nav-btn" onclick="Engine.switchTab('inventory')">背包 (BAG)</div>
-                <div class="nav-btn" onclick="location.reload()">系統 (SYS)</div>
+        <div id="screen-intro" class="screen hidden">
+            <div class="intro-text-container" id="intro-container"></div>
+            <div id="skip-intro" style="position:absolute; bottom:20px; color:#555; font-size:0.8rem; opacity:0; transition:opacity 2s;">
+                正在建立神經連結...
             </div>
         </div>
-    </div>
 
-<script>
+        <div id="screen-char-select" class="screen hidden">
+            <h2 style="color:#fff; border-bottom:1px solid #333; padding-bottom:10px; width:100%; text-align:center; margin-top: 0;">SELECT SUBJECT</h2>
+            <button class="btn-base" onclick="Engine.startRandom()" style="width:100%; justify-content:center; border-color:var(--col-san);">
+                🎲 隨機命運 (RANDOM)
+            </button>
+            <div id="char-list-container"></div>
+        </div>
+
+        <div id="screen-game" class="screen hidden">
+            <div class="top-bar">
+                <span id="loc-name" style="color:#fff; font-weight:bold; letter-spacing:1px;">LOCATION</span>
+                <span id="char-name" style="color:var(--text-dim); font-size:0.8rem;">UNKNOWN</span>
+            </div>
+            <div id="panel-log"></div>
+            <div id="panel-controls">
+                <div id="hud-stats">
+                    <div class="stat-pod"><div class="stat-val"><span>HP</span><span id="val-hp">100</span></div><div class="bar-track"><div id="bar-hp" class="bar-fill" style="background:var(--col-hp);"></div></div></div>
+                    <div class="stat-pod"><div class="stat-val"><span>SAN</span><span id="val-san">100</span></div><div class="bar-track"><div id="bar-san" class="bar-fill" style="background:var(--col-san);"></div></div></div>
+                    <div class="stat-pod"><div class="stat-val"><span>$$$</span><span id="val-cash">0</span></div><div class="bar-track"><div id="bar-cash" class="bar-fill" style="background:var(--col-cash);"></div></div></div>
+                </div>
+                <div id="interaction-area">
+                    <div id="actions-view" class="active"></div>
+                    <div id="inventory-view"></div>
+                </div>
+                <div id="bottom-nav">
+                    <div class="nav-btn active" onclick="Engine.switchTab('actions')">行動 (ACT)</div>
+                    <div class="nav-btn" onclick="Engine.switchTab('inventory')">背包 (BAG)</div>
+                    <div class="nav-btn" onclick="location.reload()">系統 (SYS)</div>
+                </div>
+            </div>
+        </div>
+
+    </div> <script>
 /**
  * RED SOIL: CORE ENGINE
  */
@@ -340,15 +340,17 @@ const Engine = {
         this.renderCharList();
     },
 
+    // --- 側邊欄控制 (推移式) ---
     toggleSidebar: function() {
-        const sidebar = document.getElementById('sidebar');
-        const overlay = document.querySelector('.overlay-bg');
-        if (sidebar.classList.contains('open')) {
-            sidebar.classList.remove('open');
-            overlay.classList.remove('active');
+        const pusher = document.getElementById('app-pusher');
+        const body = document.body;
+        
+        if (pusher.classList.contains('pushed')) {
+            pusher.classList.remove('pushed');
+            body.classList.remove('menu-open');
         } else {
-            sidebar.classList.add('open');
-            overlay.classList.add('active');
+            pusher.classList.add('pushed');
+            body.classList.add('menu-open');
         }
     },
 
