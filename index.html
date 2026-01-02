@@ -7,20 +7,22 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="theme-color" content="#0a0a0c">
-    <title>紅土下的餘燼 | 煉獄十層</title>
+    <title>RED SOIL ENGINE</title>
     <style>
         /* =========================================
            VISUAL CORE (視覺核心)
            ========================================= */
         :root {
             --bg-dark: #050505;
-            --glass-panel: rgba(20, 25, 30, 0.95);
+            --glass-panel: rgba(20, 25, 30, 0.95); /* 加深背景防透視 */
             --glass-border: rgba(255, 255, 255, 0.1);
             --text-main: #e0e0e0;
             --text-dim: #888;
+            
             --col-hp: #ff3333;
             --col-san: #00f3ff;
             --col-cash: #ffd700;
+            
             --anim-fast: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
             --font-ui: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, monospace;
         }
@@ -42,7 +44,119 @@
             background-size: 100% 4px;
         }
 
-        /* --- 側邊欄樣式 --- */
+        /* --- UI 修復：Flexbox 垂直堆疊 --- */
+        /* 確保每個區塊都佔據實體空間，避免重疊 */
+        
+        .screen {
+            position: absolute; inset: 0; 
+            display: flex; flex-direction: column; /* 垂直排列 */
+            background: #000;
+            transition: opacity 0.5s;
+            z-index: 10;
+        }
+        .screen.hidden { opacity: 0; pointer-events: none; z-index: 0; }
+
+        /* 頂部資訊列 (不再是 absolute) */
+        .top-bar {
+            flex: 0 0 auto; /* 固定高度 */
+            padding: 15px;
+            background: rgba(10, 10, 12, 0.95);
+            border-bottom: 1px solid #333;
+            display: flex; justify-content: space-between; align-items: center;
+            z-index: 20;
+        }
+
+        /* 中間日誌區 (自動填滿剩餘空間) */
+        #panel-log {
+            flex: 1 1 auto; /* 彈性伸縮 */
+            padding: 20px;
+            overflow-y: auto; /* 內部捲動 */
+            scroll-behavior: smooth;
+            background: linear-gradient(to bottom, #000 0%, var(--bg-dark) 20%);
+        }
+
+        /* 底部控制區 (固定高度) */
+        #panel-controls {
+            flex: 0 0 45%; /* 固定佔比 */
+            max-height: 400px;
+            background: var(--glass-panel);
+            backdrop-filter: blur(20px);
+            border-top: 1px solid var(--glass-border);
+            display: flex; flex-direction: column;
+            padding: 15px;
+            box-shadow: 0 -10px 40px rgba(0,0,0,0.8);
+            z-index: 30;
+        }
+
+        /* --- 其他樣式 --- */
+        .btn-base {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid var(--glass-border);
+            color: #fff; padding: 12px; margin-bottom: 8px;
+            border-radius: 6px; cursor: pointer;
+            position: relative; overflow: hidden;
+            transition: var(--anim-fast);
+            display: flex; align-items: center; justify-content: space-between;
+        }
+        .btn-base:active { transform: scale(0.98); background: rgba(255,255,255,0.1); }
+        .btn-base::after { content:''; position: absolute; top:0; left:0; width:3px; height:100%; background: transparent; transition: var(--anim-fast); }
+        
+        .btn-move:hover { border-color: #fff; }
+        .btn-move:hover::after { background: #fff; }
+        .btn-action { background: rgba(0, 243, 255, 0.05); }
+        .btn-action:hover { border-color: var(--col-san); }
+        .btn-action:hover::after { background: var(--col-san); }
+
+        .log-entry { margin-bottom: 15px; line-height: 1.6; opacity: 0; transform: translateY(10px); animation: fadeUp 0.3s forwards; }
+        .log-entry.system { color: var(--text-dim); font-size: 0.9rem; border-left: 2px solid #333; padding-left: 8px; }
+        .log-entry.danger { color: #ff8888; }
+        .log-entry.gain { color: #ffeebb; }
+        @keyframes fadeUp { to { opacity: 1; transform: translateY(0); } }
+
+        #hud-stats { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px solid rgba(255,255,255,0.05); }
+        .stat-pod { display: flex; flex-direction: column; gap: 4px; }
+        .stat-val { font-size: 0.8rem; font-family: monospace; color: #fff; display: flex; justify-content: space-between; }
+        .bar-track { width: 100%; height: 4px; background: #333; border-radius: 2px; overflow: hidden; }
+        .bar-fill { height: 100%; width: 50%; transition: width 0.5s; }
+
+        #interaction-area { flex: 1; overflow-y: auto; position: relative; }
+        
+        #bottom-nav { display: flex; border-top: 1px solid #333; margin-top: 10px; padding-top: 10px; }
+        .nav-btn { flex: 1; text-align: center; padding: 10px; color: #666; font-size: 0.8rem; cursor: pointer; }
+        .nav-btn.active { color: #fff; font-weight: bold; text-shadow: 0 0 10px rgba(255,255,255,0.3); }
+
+        #inventory-view { display: none; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+        #inventory-view.active { display: grid; }
+        .inv-slot { aspect-ratio: 1; background: rgba(0,0,0,0.3); border: 1px solid #444; display: flex; align-items: center; justify-content: center; font-size: 0.7rem; color: #aaa; text-align: center; cursor: pointer; word-break: break-all; padding: 2px; }
+        .inv-slot:hover { border-color: var(--col-cash); color: #fff; }
+        #actions-view { display: none; }
+        #actions-view.active { display: block; }
+
+        /* 標題與選角 */
+        #screen-landing { align-items: center; justify-content: center; padding: 40px; }
+        .title-glitch { font-size: 2rem; font-weight: 900; letter-spacing: 5px; color: var(--col-hp); text-shadow: 2px 0 var(--col-san); margin-bottom: 10px; text-align: center; }
+        .btn-main { padding: 15px 40px; font-size: 1.2rem; margin-top: 20px; background: var(--col-hp); color: #000; font-weight: bold; border: none; border-radius: 4px; cursor: pointer; width: 100%; max-width: 300px;}
+        .btn-sub { padding: 10px 20px; font-size: 1rem; margin-top: 10px; background: transparent; border: 1px solid #444; color: #888; border-radius: 4px; cursor: pointer; width: 100%; max-width: 300px;}
+        
+        /* --- 1.5 新增：劇情敘事頁 (Intro Story) --- */
+        #screen-intro {
+            align-items: center; justify-content: center; padding: 40px;
+            background: #000; color: #ccc; text-align: center;
+        }
+        .intro-text-container {
+            max-width: 600px;
+            font-family: 'Courier New', monospace;
+            line-height: 2;
+        }
+        .intro-line {
+            opacity: 0; margin-bottom: 20px;
+            transition: opacity 1.5s;
+            color: var(--col-san);
+            text-shadow: 0 0 5px rgba(0, 243, 255, 0.3);
+        }
+        .intro-line.visible { opacity: 1; }
+
+        /* --- 側邊欄樣式 (含 Logo) --- */
         #sidebar {
             position: fixed; top: 0; left: 0; width: 85%; max-width: 320px; height: 100%;
             background: rgba(10, 12, 15, 0.98);
@@ -70,71 +184,11 @@
             opacity: 0; pointer-events: none; transition: opacity 0.3s;
         }
         .overlay-bg.active { opacity: 1; pointer-events: auto; }
-
-        /* --- 頁面層級 --- */
-        .screen { position: absolute; inset: 0; display: flex; flex-direction: column; background: #000; transition: opacity 0.8s; z-index: 10; }
-        .screen.hidden { opacity: 0; pointer-events: none; z-index: 0; }
         
-        /* --- 1. 落地頁 --- */
-        #screen-landing { align-items: center; justify-content: center; padding: 40px; }
-        .title-glitch { font-size: 3rem; font-weight: 900; letter-spacing: 5px; color: var(--col-hp); text-shadow: 2px 0 var(--col-san); margin-bottom: 10px; text-align: center; }
-        .btn-main { padding: 15px 40px; font-size: 1.2rem; margin-top: 20px; background: var(--col-hp); color: #000; font-weight: bold; border: none; border-radius: 4px; cursor: pointer; width: 100%; max-width: 300px;}
-        .btn-sub { padding: 10px 20px; font-size: 1rem; margin-top: 10px; background: transparent; border: 1px solid #444; color: #888; border-radius: 4px; cursor: pointer; width: 100%; max-width: 300px;}
-        
-        /* --- 1.5 新增：劇情敘事頁 (Intro Story) --- */
-        #screen-intro {
-            align-items: center; justify-content: center; padding: 40px;
-            background: #000; color: #ccc; text-align: center;
-        }
-        .intro-text-container {
-            max-width: 600px;
-            font-family: 'Courier New', monospace;
-            line-height: 2;
-        }
-        .intro-line {
-            opacity: 0; margin-bottom: 20px;
-            transition: opacity 1.5s;
-            color: var(--col-san);
-            text-shadow: 0 0 5px rgba(0, 243, 255, 0.3);
-        }
-        .intro-line.visible { opacity: 1; }
-        
-        /* --- 2. 選角頁 --- */
         #screen-char-select { padding: 20px; padding-top: 60px; }
         #char-list-container { width: 100%; max-width: 600px; flex: 1; overflow-y: auto; margin-top: 20px; padding: 10px; border-top: 1px solid #333; }
         .char-card { background: #111; padding: 15px; margin-bottom: 10px; border-left: 4px solid #444; cursor: pointer; transition: 0.2s; }
         .char-card:hover { background: #222; border-left-color: var(--col-hp); }
-
-        /* --- 3. 遊戲頁 --- */
-        .top-bar { flex: 0 0 auto; padding: 15px; padding-left: 60px; background: rgba(10, 10, 12, 0.95); border-bottom: 1px solid #333; display: flex; justify-content: space-between; align-items: center; z-index: 20; }
-        #panel-log { flex: 1 1 auto; padding: 20px; overflow-y: auto; scroll-behavior: smooth; background: linear-gradient(to bottom, #000 0%, var(--bg-dark) 20%); }
-        #panel-controls { flex: 0 0 45%; max-height: 400px; background: var(--glass-panel); backdrop-filter: blur(20px); border-top: 1px solid var(--glass-border); display: flex; flex-direction: column; padding: 15px; box-shadow: 0 -10px 40px rgba(0,0,0,0.8); z-index: 30; }
-
-        .btn-base { background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); color: #fff; padding: 12px; margin-bottom: 8px; border-radius: 6px; cursor: pointer; position: relative; overflow: hidden; transition: var(--anim-fast); display: flex; align-items: center; justify-content: space-between; }
-        .btn-move:hover { border-color: #fff; }
-        .btn-action:hover { border-color: var(--col-san); }
-        .btn-save { background: rgba(255, 215, 0, 0.05); border-color: var(--col-cash); margin-top: auto; }
-
-        .log-entry { margin-bottom: 15px; line-height: 1.6; opacity: 0; transform: translateY(10px); animation: fadeUp 0.3s forwards; }
-        .log-entry.system { color: var(--text-dim); font-size: 0.9rem; border-left: 2px solid #333; padding-left: 8px; }
-        .log-entry.danger { color: #ff8888; }
-        .log-entry.gain { color: #ffeebb; }
-        @keyframes fadeUp { to { opacity: 1; transform: translateY(0); } }
-
-        #hud-stats { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px solid rgba(255,255,255,0.05); }
-        .stat-pod { display: flex; flex-direction: column; gap: 4px; }
-        .stat-val { font-size: 0.8rem; font-family: monospace; color: #fff; display: flex; justify-content: space-between; }
-        .bar-track { width: 100%; height: 4px; background: #333; border-radius: 2px; overflow: hidden; }
-        .bar-fill { height: 100%; width: 50%; transition: width 0.5s; }
-
-        #bottom-nav { display: flex; border-top: 1px solid #333; margin-top: 10px; padding-top: 10px; }
-        .nav-btn { flex: 1; text-align: center; padding: 10px; color: #666; font-size: 0.8rem; cursor: pointer; }
-        .nav-btn.active { color: #fff; font-weight: bold; text-shadow: 0 0 10px rgba(255,255,255,0.3); }
-        #inventory-view, #actions-view { display: none; }
-        #inventory-view.active { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
-        .inv-slot { aspect-ratio: 1; background: rgba(0,0,0,0.3); border: 1px solid #444; display: flex; align-items: center; justify-content: center; font-size: 0.7rem; color: #aaa; text-align: center; cursor: pointer; word-break: break-all; padding: 2px; }
-        #actions-view.active { display: block; }
-
     </style>
 </head>
 <body>
@@ -147,6 +201,8 @@
     <button class="menu-btn" onclick="Engine.toggleSidebar()">☰</button>
 
     <div id="sidebar">
+        <img src="logo.png" alt="Game Logo" style="width: 100px; height: auto; margin-bottom: 15px; border-radius: 8px; border: 1px solid #333;">
+
         <h2 style="color:#ff3e3e; letter-spacing:2px; margin-bottom: 0;">紅土下的餘燼<br>RED SOIL</h2>
         <div style="font-size:0.7rem; color:#666;">v2.0 // ULTIMATE</div>
         <h3>關於遊戲</h3>
@@ -185,7 +241,7 @@
     </div>
 
     <div id="screen-char-select" class="screen hidden">
-        <h2 style="color:#fff; border-bottom:1px solid #ff3e3e; padding-bottom:10px; width:100%; text-align:center; margin-top: 0;">串聯對象</h2>
+        <h2 style="color:#fff; border-bottom:1px solid #333; padding-bottom:10px; width:100%; text-align:center; margin-top: 0;">SELECT SUBJECT</h2>
         <button class="btn-base" onclick="Engine.startRandom()" style="width:100%; justify-content:center; border-color:var(--col-san);">
             🎲 隨機命運 (RANDOM)
         </button>
@@ -241,16 +297,13 @@ const Engine = {
 
     // --- 音樂與開場敘事 ---
     startIntroSequence: function() {
-        // 1. 播放音樂 (用戶互動觸發)
         const bgm = document.getElementById('bgm');
         bgm.volume = 0.5;
         bgm.play().catch(e => console.log("Audio play failed:", e));
 
-        // 2. 切換到敘事頁面
         document.getElementById('screen-landing').classList.add('hidden');
         document.getElementById('screen-intro').classList.remove('hidden');
 
-        // 3. 執行文字動畫
         const lines = [
             "身份驗證：中華民國內政部警政署 專案警員",
             "權限等級：機密 (Classified)",
@@ -273,30 +326,20 @@ const Engine = {
             p.className = 'intro-line';
             p.innerText = text;
             container.appendChild(p);
-
-            // 漸顯時間控制
-            setTimeout(() => {
-                p.classList.add('visible');
-            }, delay);
-            
-            delay += 1500; // 每句間隔 1.5 秒
+            setTimeout(() => { p.classList.add('visible'); }, delay);
+            delay += 1500; 
         });
 
-        // 4. 動畫結束後自動進入選角
-        setTimeout(() => {
-            this.enterCharSelect();
-        }, delay + 2000);
+        setTimeout(() => { this.enterCharSelect(); }, delay + 2000);
     },
 
-    // --- 進入選角 ---
     enterCharSelect: function() {
-        document.getElementById('screen-intro').classList.add('hidden'); // 隱藏敘事頁
+        document.getElementById('screen-intro').classList.add('hidden');
         document.getElementById('screen-landing').classList.add('hidden');
         document.getElementById('screen-char-select').classList.remove('hidden');
         this.renderCharList();
     },
 
-    // --- 側邊欄控制 ---
     toggleSidebar: function() {
         const sidebar = document.getElementById('sidebar');
         const overlay = document.querySelector('.overlay-bg');
@@ -309,7 +352,6 @@ const Engine = {
         }
     },
 
-    // --- 存讀檔 ---
     saveGame: function() {
         if (!this.state.location) {
             alert("目前沒有進行中的遊戲進度。");
@@ -329,7 +371,6 @@ const Engine = {
     },
 
     loadGame: function(input) {
-        // 讀檔時也嘗試播放音樂
         const bgm = document.getElementById('bgm');
         bgm.volume = 0.5;
         bgm.play().catch(e => console.log("Audio play failed:", e));
@@ -348,7 +389,7 @@ const Engine = {
                 const savedState = JSON.parse(jsonStr);
                 this.state = savedState;
                 document.getElementById('screen-landing').classList.add('hidden');
-                document.getElementById('screen-intro').classList.add('hidden'); // 確保敘事頁隱藏
+                document.getElementById('screen-intro').classList.add('hidden');
                 document.getElementById('screen-game').classList.remove('hidden');
                 document.getElementById('char-name').innerText = savedState.charName || "UNKNOWN";
                 document.getElementById('panel-log').innerHTML = ''; 
@@ -361,7 +402,6 @@ const Engine = {
         reader.readAsText(file);
     },
 
-    // --- 遊戲邏輯 ---
     renderCharList: function() {
         const list = document.getElementById('char-list-container');
         list.innerHTML = '';
