@@ -26,12 +26,12 @@ loadWorldData({
         'adrenaline': { name: '腎上腺素', type: 'consumable', effect: { hp: 20, san: 20 }, desc: '不管是戰鬥還是逃跑，插在大腿上就對了。' },
 
         // --- 關鍵道具與護照 (Keys & Passports) ---
-        'passport_tw': { name: '中華民國護照', type: 'key', desc: '深綠色的本子。雖然國際處境艱難，但辦事處會救你。' },
-        'passport_cn': { name: '中國護照', type: 'key', desc: '暗紅色的本子。聽說大使館最近在嚴打園區，或許有用。' },
-        'passport_us': { name: '美國護照', type: 'key', desc: '藍色的老鷹。只要到了大使館，海軍陸戰隊就在門後。' },
-        'passport_uk': { name: '英國護照', type: 'key', desc: '女王(或國王)的庇護。強大的外交籌碼。' },
-        'passport_jp': { name: '日本護照', type: 'key', desc: '菊紋封面。免簽國最多的護照，自由的象徵。' },
-        'passport_ca': { name: '加拿大護照', type: 'key', desc: '楓葉封面。能讓你在北美獲得庇護。' },
+        'passport_tw': { name: 'Z.H.M.G.護照', type: 'key', desc: '深綠色的本子。雖然國際處境艱難，但辦事處會救你。' },
+        'passport_cn': { name: '強國護照', type: 'key', desc: '暗紅色的本子。聽說大使館最近在嚴打園區，或許有用。' },
+        'passport_us': { name: '咩國護照', type: 'key', desc: '藍色的老鷹。只要到了大使館，海軍陸戰隊就在門後。' },
+        'passport_uk': { name: '日不落國護照', type: 'key', desc: '女王(或國王)的庇護。強大的外交籌碼。' },
+        'passport_jp': { name: '櫻花國護照', type: 'key', desc: '菊紋封面。免簽國最多的護照，自由的象徵。' },
+        'passport_ca': { name: '楓葉國護照', type: 'key', desc: '楓葉封面。能讓你在北美獲得庇護。' },
         'passport_kp': { name: '朝鮮護照', type: 'misc', desc: '來自北韓。即使逃到大使館，他們也可能把你遣返回去槍斃。毫無用處。' },
         
         'id_card_lvl1': { name: '臨時工識別證', type: 'key', desc: '只能進出食堂和宿舍。' },
